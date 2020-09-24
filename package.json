@@ -7,7 +7,7 @@
     "start": "nodemon --exec babel-node src/index.js",
     "test": "jest",
     "build": "rm -rf  lib && babel src --out-dir lib --ignore 'src/**/*.spec.js'",
-    "serve": "yarn build && babel-node lib/index.js"
+    "serve": "yarn build && node lib/index.js"
   },
   "repository": {
     "type": "git",
