@@ -1,23 +1,28 @@
 import express from 'express';
 import wordModel from './model';
 
+import isAuthenticated from '../middlewares/isAuthenticated';
+
 const router = express.Router();
 
-// GET /word/123
-router.get('/:wordId', async (req, res) => {
-  const id = req.params.wordId;
+// GET /word/all
+router.get('/all', isAuthenticated, async (req, res) => {
   try {
-    const result = await wordModel.findById(id);
+    const result = await wordModel.find({userId: req.user_id});
     res.send(result);
   } catch (error) {
     res.status(500).send(error);
   }
 });
 
-// GET /word/all/123
-router.get('/all/:userId', async (req, res) => {
+// GET /word/123
+router.get('/:wordId', isAuthenticated, async (req, res) => {
+  const id = req.params.wordId;
   try {
-    const result = await wordModel.find({userId: req.params.userId});
+    const result = await wordModel.findById(id);
+    if (result.userId !== req.user_id) {
+      res.status(403).send('UserId mismatch.');
+    }
     res.send(result);
   } catch (error) {
     res.status(500).send(error);
@@ -25,9 +30,10 @@ router.get('/all/:userId', async (req, res) => {
 });
 
 // POST /word
-router.post('/', async (req, res) => {
+router.post('/', isAuthenticated, async (req, res) => {
   try {
-    const result = await wordModel.create(req.body);
+    const word = {...req.body, userId: req.user_id};
+    const result = await wordModel.create(word);
     result.save();
     res.send(result);
   } catch (error) {
@@ -36,8 +42,9 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /word/123
-router.put('/:wordId', async (req, res) => {
+router.put('/:wordId', isAuthenticated, async (req, res) => {
   try {
+    // TODO: extra check if word belogs to user
     const result = await wordModel.findByIdAndUpdate(req.params.wordId, req.body, {new: true});
     res.send(result);
   } catch (error) {
@@ -46,9 +53,13 @@ router.put('/:wordId', async (req, res) => {
 });
 
 // DELETE /word/123
-router.delete('/:wordId', async (req, res) => {
+router.delete('/:wordId', isAuthenticated, async (req, res) => {
   try {
+    // TODO: extra check if word belogs to user
     const result = await wordModel.findByIdAndDelete(req.params.wordId);
+    if (result.userId !== req.user_id) {
+      res.status(403).send('UserId mismatch.');
+    }
     res.status(200).send('Delete succeed');
   } catch (error) {
     res.status(500).send(error);
